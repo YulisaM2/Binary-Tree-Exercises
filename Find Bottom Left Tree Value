@@ -1,0 +1,59 @@
+/** Solution to the problem found here: https://leetcode.com/problems/find-bottom-left-tree-value/
+*
+* Given a binary tree, find the leftmost value in the last row of the tree. 
+**/
+
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    // Course through the tree on Level Order Traversal (with NULL to separate each level)
+    // The leftmost node is the last first node after NULL in the queue
+    // The cycle must stop once you have no nodes to evaluate (only a NULL in queue, and thus q empties)
+    int findBottomLeftValue(TreeNode* root) {
+        queue<TreeNode*> q;
+        q.push(root);
+        q.push(NULL);
+        
+        TreeNode* curr, *leftMost;
+        // Counter to identify when to should I point at the currently leftmost element (when it is 0, it must be restarted when curr is NULL because new level will start)
+        int firstOfLevel = 0;
+        while(!q.empty()){
+            curr = q.front();
+            q.pop();
+
+            // If we find a separation of levels, check that it is not the last, else we must exit the cycle
+            if(curr == NULL){
+                if(q.empty()){
+                    break;
+                }
+                // Add a NULL to separate levels and restart counter
+                q.push(NULL);
+                firstOfLevel = 0;
+            }else{
+                // If I am at the leftmost element, assign it to pointer
+                if(firstOfLevel == 0){
+                    leftMost = curr;
+                }    
+            
+                if(curr->left != NULL){
+                    q.push(curr->left);
+                }
+
+                if(curr->right != NULL){
+                    q.push(curr->right);
+                }
+                ++firstOfLevel;
+            }
+        }
+        
+        return leftMost->val;
+    }
+};
