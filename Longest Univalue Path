@@ -1,0 +1,57 @@
+/** Solution to the problem found here: https://leetcode.com/problems/longest-univalue-path/
+*
+* Given a binary tree, find the length of the longest path where each node in the path has the same value. 
+* This path may or may not pass through the root.
+* The length of path between two nodes is represented by the number of edges between them.
+**/
+
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+ 
+class Solution {
+public:
+    
+    // Important note: you want to get the longest lenght, which includes the current left and right child 
+    // Thus, you need to add the longest addition of heights 
+    int recursiveSearch(TreeNode* r,int&base, TreeNode* nodeFather){
+       if(r == NULL) {
+           return 0;
+       }
+        
+        // Get the total sum of the left and right height
+        int leftHeight = recursiveSearch(r->left,base,r);
+        int rightHeight = recursiveSearch(r->right,base,r);
+        
+        // If the sum of this is bigger than our previous record, update it
+        if(leftHeight + rightHeight > base){
+            base = leftHeight + rightHeight;
+        }
+        
+        // Check that our current value does match our basis/nodeFather
+        if(r->val == nodeFather->val){
+            return leftHeight > rightHeight? 1 + leftHeight : 1 + rightHeight;
+          }else{
+                return 0;
+          }
+        
+        
+    }
+    
+    
+    int longestUnivaluePath(TreeNode* root) {
+        if(root == NULL){
+            return 0;
+        }
+        int base = 0;
+        recursiveSearch(root,base, root);
+        return base;
+    }
+    
+};
