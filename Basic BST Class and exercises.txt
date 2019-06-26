@@ -1,0 +1,846 @@
+#pragma once
+// Yulisa Medina A01570056 
+#include <stack>
+#include <queue>
+#include <algorithm>
+#include <math.h>
+#include "NodeT.h"
+
+class BST{
+public:
+	BST();
+	~BST();
+	void add(int data);
+	bool search(int data);
+	void remove(int data);
+	void print(int c);
+	int count();
+
+
+	// Tarea 1
+	NodeT* getRoot() { return root; }
+	int height();
+	void ancestors(int data);
+	int whatLevelamI(int data);
+	// para el print 5
+	void recorridoNivel(NodeT* r);
+
+
+	// Tarea 2
+	int maxWidth();
+	int nearstRelative(int data1, int data2);
+	BST(const BST &t2);
+	bool operator==(BST t2);
+	void mirror();
+
+	// Tarea 3
+	int diameter();
+	bool isBalanced();
+
+	// Ejercicios entrevistas
+	bool balancedTree();
+	int whatIsDiameter();
+	int shortestDistance(int data1, int data2);
+	int secondLargest();
+	//void iterInorden();
+	void printParentLeaves();
+
+private:
+	NodeT *root;
+
+	int howManyChildren(NodeT* r);
+	int pred(NodeT* r);
+	int succ(NodeT *r);
+	void preOrder(NodeT* r);
+	void postOrder(NodeT* r);
+	void inOrden(NodeT* r);
+	void libera(NodeT* r);
+	void printLeaves(NodeT* r);
+	int cuenta(NodeT* r);
+	int altura(NodeT *r);
+	void flip(NodeT* r);
+	void copy(NodeT* r);
+	void calcwidth(NodeT* r, vector<int>& nodesInLevel, int currentLevel);
+	int longestPath(NodeT* r, int &cantNodes);
+	int checkBalance(NodeT* r, bool &balanced);
+	void printParents(NodeT* r,stack<NodeT*>&parents);
+	// Ejercicios entrevistas
+	int balanceTrajectory(NodeT* r, bool& itsBalanced);
+	int thisIsDiameter(NodeT* r, int& diameterS);
+};
+
+BST::BST() {
+	root = NULL;
+}
+
+void BST::libera(NodeT* r) {
+	// Primero libera los hijos izq, luego los derechos, y al final el root
+	if (r != NULL) {
+		libera(r->getLeft());
+		libera(r->getRight());
+	}
+}
+
+BST::~BST() {
+	libera(root);
+}
+
+bool BST::search(int data) {
+	NodeT* curr = root;
+	while (curr != NULL) {
+		if (curr->getData() == data) {
+			return true;
+		}
+		// Si lo que busco es menor al curr, tienes que irte a la izquierda, si es mayor, a la derecha
+		curr = (curr->getData() > data) ? curr->getLeft() : curr->getRight();
+	}
+	return false;
+}
+
+void BST::add(int data) {
+	NodeT *curr = root;
+	NodeT* father = NULL;
+
+	while (curr != NULL) {
+		if (curr->getData() == data) {
+			return;
+		}
+
+		father = curr;
+		curr = (curr->getData() > data) ? curr->getLeft() : curr->getRight();
+
+	}
+
+	// Si el arbol esta vacio pues curr siempre fue NULL
+	if (father == NULL) {
+		this->root = new NodeT(data);
+	// Si si localizaste un father valido, checa si vas a crear un nuevo nodo a la izq or der dependiendo del valor del father
+	}else {
+		if (father->getData() > data) {
+			father->setLeft(new NodeT(data));
+		}
+		else {
+			father->setRight(new NodeT(data));
+		}
+	}
+}
+
+
+int BST::howManyChildren(NodeT *r) {
+	int cant = 0;
+	if (r->getLeft() != NULL) {
+		cant++;
+	}
+
+	if (r->getRight() != NULL) {
+		cant++;
+	}
+
+	return cant;
+}
+
+// El mayor de los menores
+int BST::pred(NodeT* r) {
+	NodeT *aux = r->getLeft();
+	while (aux->getRight() != NULL) {
+		aux = aux->getRight();
+	}
+	return aux->getData();
+}
+
+// El menor de los mayores
+int BST::succ(NodeT* r) {
+	NodeT* aux = r->getRight();
+	while (aux->getLeft() != NULL) {
+		aux = aux->getLeft();
+	}
+	return aux->getData();
+}
+
+void BST::remove(int data) {
+	NodeT * curr = root;
+	NodeT* father = NULL;
+
+// IMPORTA EL ORDEN DEL AND PORQUE SINO MARCA ERROR
+while (curr != NULL && curr->getData() != data) {
+	father = curr;
+	curr = (curr->getData() > data) ? curr->getLeft() : curr->getRight();
+}
+// Si no esta no hay nada que borrar
+if (curr == NULL) {
+	return;
+}
+
+int ch = howManyChildren(curr);
+switch (ch) {
+case 0: {
+	// Si padre es NULL es porque curr es root (pues father es un nodo antes de curr)
+	if (father == NULL) {
+		root = NULL;
+	}
+	else {
+		if (father->getData() > data) {
+			father->setLeft(NULL);
+		}
+		else {
+			father->setRight(NULL);
+		}
+	}
+}
+		break;
+
+case 1: {
+	if (father == NULL) {
+		if (curr->getLeft() != NULL) {
+			root = curr->getLeft();
+		}
+		else {
+			root = curr->getRight();
+		}
+		// En caso de tener una cadena de tres, es importante apuntar father al hijo correcto,
+		// Por eso hay que verificar si el nieto es izq o derecha, lo que se hace a continuacion
+	}
+	else {
+		if (father->getData() > data) {
+			if (curr->getLeft() != NULL) {
+				father->setLeft(curr->getLeft());
+			}
+			else {
+				father->setLeft(curr->getRight());
+			}
+		}
+		else {
+			if (curr->getLeft() != NULL) {
+				father->setRight(curr->getLeft());
+			}
+			else {
+				father->setRight(curr->getRight());
+			}
+		}
+	}
+}
+		break;
+
+case 2: {
+	int x = pred(curr);
+	remove(x);
+	curr->setData(x);
+}
+		break;
+}
+}
+
+void BST::preOrder(NodeT* r) {
+	if (r != NULL) {
+		cout << r->getData() << " ";
+		preOrder(r->getLeft());
+		preOrder(r->getRight());
+	}
+}
+
+void BST::inOrden(NodeT *r) {
+	if (r != NULL) {
+		inOrden(r->getLeft());
+		cout << r->getData() << " ";
+		inOrden(r->getRight());
+	}
+}
+
+void BST::postOrder(NodeT* r) {
+	if (r != NULL) {
+		postOrder(r->getLeft());
+		postOrder(r->getRight());
+		cout << r->getData() << " ";
+	}
+}
+// Como en LeetCode -- Breath First Search
+void BST::recorridoNivel(NodeT* r) {
+	
+	if (root != NULL) {
+		queue <NodeT*> q1;
+		q1.push(root);
+		
+		while (!q1.empty()) {
+			//	Se usa front no pop porque pop regresa void
+			NodeT* curr = q1.front();
+			q1.pop();
+			cout << curr->getData() << " ";
+			if (curr->getLeft() != NULL) {
+				q1.push(curr->getLeft());
+			}
+			
+			if (curr->getRight() != NULL) {
+				q1.push(curr->getRight());
+			}
+
+		}
+
+	}
+
+		
+}
+
+void BST::printLeaves(NodeT* r) {
+	if (r != NULL) {
+		if (r->getLeft() == NULL && r->getRight() == NULL) {
+			cout << r->getData() << " ";
+		}
+		else{
+			printLeaves(r->getLeft());
+			printLeaves(r->getRight());
+		}
+	}
+}
+
+void BST::print(int c) {
+	// 1 - Preorden
+	// 2 - Inorden
+	// 3 - Postorden
+	// 5 - Recorrido Nivel x Nivel del arbol
+	switch (c) {
+		case 1:preOrder(root);
+			break;
+		case 2: inOrden(root);
+			break;
+		case 3: postOrder(root);
+			break;
+		case 4: printLeaves(root);
+			break;
+		case 5: recorridoNivel(root);
+			break;
+	}
+	cout << endl;
+}
+
+// Recomendado usando recursividad
+// Cuando usas DFS esta dificil mantener control de la variable size pues cambia dependiendo de la direccion 
+int BST::altura(NodeT* r) {
+	if (r == NULL) {
+		return 0;
+	}
+	int izq = altura(r->getLeft());
+	int der = altura(r->getRight());
+
+	return 1 + (izq > der ? izq : der);
+}
+
+int BST::height() {
+	return altura(root);
+}
+
+void BST::ancestors(int data) {
+	NodeT* curr = root;
+	stack<NodeT*> pila;
+	while (curr != NULL) {
+		if (curr->getData() == data) {
+			if (pila.empty()) {
+				cout << "NO TIENE ANCESTROS" << endl;
+			}
+			else {
+				while (!pila.empty()) {
+					cout << pila.top()->getData()<< " ";
+					pila.pop();
+				}
+				cout << endl;
+			}
+			return;
+		}
+		pila.push(curr);
+		curr = (curr->getData() > data) ? curr->getLeft() : curr->getRight();
+	}
+
+	cout << "NO ESTA EN EL ARREGLO " << endl;
+}
+
+int BST::whatLevelamI(int data) {
+	NodeT* curr = root;
+	int level = 0;
+	while (curr != NULL) {
+		if (curr->getData() == data) {
+			return level;
+		}
+		level++;
+		curr = (curr->getData() > data) ? curr->getLeft() : curr->getRight();
+	}
+
+	return -1;
+}
+
+int BST::cuenta(NodeT *r) {
+	if (r == NULL) {
+		return 0;
+	}
+	return 1 + cuenta(r->getLeft()) + cuenta(r->getRight());
+}
+
+int BST::count() {
+	return cuenta(root);
+}
+
+
+// Tarea 2
+void BST::calcwidth(NodeT* r, vector <int> &nodeInLevel, int currentLevel) {
+	if (r == NULL) {
+		return;
+	}
+	
+	nodeInLevel.emplace_back(currentLevel);
+	currentLevel++;
+	calcwidth(r->getLeft(), nodeInLevel, currentLevel);
+	calcwidth(r->getRight(), nodeInLevel, currentLevel);
+}
+
+int BST::maxWidth() {
+	if (root == NULL) {
+		return 0;
+	}
+	vector<int> nodeInLevel;
+	// Navegar ABB y poner cuantos nodos hay en cada nivel, apoyandome en el vector
+	calcwidth(root, nodeInLevel, 0);
+
+	// Calcular la distancia entre 0 y el iterador con el elemento mas grande
+	int maxLevel = nodeInLevel[distance(nodeInLevel.begin(), max_element(nodeInLevel.begin(), nodeInLevel.end()))];
+	// Sacar cuantos nodos hay en cada nivel para calcular anchuras, y checar cual es la mayor 
+
+
+	int maxWidth = 0;
+	// Es menor o igual porque el indice empieza en 0 y si no no lo considera
+	for (int i = 0; i <= maxLevel; ++i) {
+		int bufferWidth = std::count(nodeInLevel.begin(), nodeInLevel.end(), i);
+
+		cout << bufferWidth << endl;
+		if (bufferWidth > maxWidth) {
+			maxWidth = bufferWidth;
+		}
+	}
+
+	return maxWidth;
+
+}
+
+int BST::nearstRelative(int data1, int data2) {
+	NodeT* curr = root;
+	vector<NodeT*> pila1;
+	bool  foundInTree = false;
+	while (curr != NULL) {
+		if (curr->getData() == data1) {
+			foundInTree = true;
+			break;
+			if (pila1.empty()) {
+				return -1;
+			}
+		}
+		pila1.emplace_back(curr);
+		curr = (curr->getData() > data1) ? curr->getLeft() : curr->getRight();
+	}
+
+	if (!foundInTree) {
+		return -1;
+	}
+
+	curr = root;
+	vector<NodeT*> pila2;
+	foundInTree = false;
+	while (curr != NULL) {
+		if (curr->getData() == data2) {
+			foundInTree = true;
+			break;
+			if (pila2.empty()) {
+				return -1;
+			}
+		}
+		pila2.emplace_back(curr);
+		curr = (curr->getData() > data2) ? curr->getLeft() : curr->getRight();
+	}
+
+	if (!foundInTree) {
+		return -1;
+	}
+
+	vector<NodeT*> *longestQueue = pila1.size() > pila2.size() ? &pila1 : &pila2;
+	vector<NodeT*> *smallestQueue = longestQueue != &pila1 ? &pila1 : &pila2;
+	while (!longestQueue->empty()) {
+		NodeT* currNode = longestQueue->at(longestQueue->size() - 1);
+		longestQueue->pop_back();
+
+		vector<NodeT*>::iterator locationAncesterFound = find(smallestQueue->begin(), smallestQueue->end(), currNode);
+		if (locationAncesterFound != smallestQueue->end()) {
+			return smallestQueue->at(distance(smallestQueue->begin(), locationAncesterFound))->getData();
+		}
+	}
+}
+
+
+void BST::copy(NodeT* r) {
+	if (r == NULL) {
+		return;
+	}
+
+	add(r->getData());
+	copy(r->getLeft());
+	copy(r->getRight());
+	
+}
+
+
+BST::BST(const BST &t2) {
+	if (t2.root != NULL) {
+
+		NodeT* curr = t2.root;
+		copy(curr);
+
+	}
+
+
+	/*if (t2.root != NULL) {
+		root = new NodeT(t2.root->getData());
+
+		queue <NodeT*> fathers;
+		fathers.push(t2.root);
+
+		queue <NodeT*> children;
+		NodeT* pointerCopy = root;
+
+
+		while (!fathers.empty()) {
+	
+			NodeT* currT2 = fathers.front();
+
+			if (currT2->getData() != t2.root->getData()) {
+				if (currT2->getData() == pointerCopy->getLeft()->getData()) {
+					pointerCopy = pointerCopy->getLeft();
+				}else {
+					pointerCopy = pointerCopy->getRight();
+				}
+			}
+
+			cout << "CURR " << currT2->getData() << " Pointer copy " << pointerCopy->getData() << endl;
+ 
+			if (currT2->getLeft() != NULL) {
+				children.push(currT2->getLeft());
+			}
+
+			if (currT2->getRight() != NULL) {
+				children.push(currT2->getRight());
+			}
+
+			while (!children.empty()) {
+				NodeT* child = children.front();
+
+				if (child->getData() > currT2->getData()) {
+
+					pointerCopy->setRight(new NodeT(currT2->getData()));
+				}else {
+
+					pointerCopy->setLeft(new NodeT(currT2->getData()));
+				}
+
+				fathers.push(child);
+				children.pop();
+			}
+
+			fathers.pop();
+		}
+	}
+	else {
+		root = NULL;
+	}*/
+	
+
+}
+
+bool BST::operator==(BST t2) {
+	// Si los dos estan vacios son iguales
+	// Si uno esta vacio y el otro no no son iguales
+	
+	if (root == NULL && t2.root == NULL) {
+		return true;
+	}
+
+	if (root != NULL && t2.root == NULL) {
+		return false;
+	}
+
+	if (root == NULL && t2.root != NULL) {
+		return false;
+	}
+
+	// Comparacion si tienen mas de un nodo
+	queue <NodeT*> qThis;
+	queue <NodeT*> qT2;
+
+	NodeT* currThis = root;
+	NodeT* currT2 = t2.root;
+
+	qThis.push(currThis);
+	qT2.push(currT2);
+
+
+	// Comparar nivel por nivel 
+	while (!qThis.empty() && !qT2.empty()) {
+		currThis = qThis.front();
+		qThis.pop();
+
+		currT2 = qT2.front();
+		qT2.pop();
+
+		if (currThis->getData() != currT2->getData()) {
+			return false;
+		}
+
+		if(currThis->getLeft() != NULL) {
+			qThis.push(currThis->getLeft());
+		}
+
+		if (currThis->getRight() != NULL) {
+			qThis.push(currThis->getRight());
+		}
+
+		if (currT2->getLeft() != NULL) {
+			qT2.push(currT2->getLeft());
+		}
+
+		if (currT2->getRight() != NULL) {
+			qT2.push(currT2->getRight());
+		}
+
+		
+	}
+	// Si los dos estan vacios y nunca se regreso falso, quiere decir que son iguales
+	// Si uno esta vacio quiere decir que tenian los mismos nodos hasta cierto punto, pero a uno le falto un pedazo
+	if (qThis.empty() && qT2.empty()) {
+		return true;
+	}else {
+		return false;
+	}
+}
+
+//		 5
+//	  /	    \
+//	  2		 7
+//  /   \      \
+// 1	 3  	8
+//		  \
+//		   4
+
+void BST::flip(NodeT* r) {
+	if (r == NULL) {
+		return;
+	}
+	
+	NodeT* father = r;
+	NodeT* aux = r->getLeft();
+
+	father->setLeft(father->getRight());
+	father->setRight(aux);
+	flip(father->getLeft());
+	flip(father->getRight());
+	
+}
+
+void BST::mirror() {
+	flip(root);
+}
+
+// El diametro de un arbol con solo root es 1
+int BST::diameter() {
+	if (root == NULL) {
+		return 0;
+	}
+	int cantNodes = 1;
+	longestPath(root, cantNodes);
+	// Recordar que el diametro es la cant de nodos - 1 
+	return cantNodes;
+}
+
+int BST::longestPath(NodeT* r, int &cantNodes) {
+	if (r == NULL) {
+		return 0;
+	}
+	
+	int izq = longestPath(r->getLeft(), cantNodes);
+	int der = longestPath(r->getRight(), cantNodes);
+
+	// Maxima distancia entre left & right subtree + root 
+	cantNodes = max(cantNodes, izq + der + 1);
+	// 1 + camino mas largo encontrado
+	return 1 + max(izq, der);
+}
+
+// Un arbol esta balanceado si si diferencia de altura es menor o igual a 1
+// osea checar dif abs < 1
+// en todos los subtrees
+int BST::checkBalance(NodeT* r, bool &balanced) {
+	if (r == NULL) {
+		return 0;
+	}
+
+	int izq = checkBalance(r->getLeft(), balanced);
+	int der = checkBalance(r->getRight(), balanced);
+	// Cada vez que recorra una rama, checar si se debe cambiar balanced
+	if (abs(der - izq) > 1) {
+		balanced = false;
+	}
+
+	return 1 + max(izq, der);
+}
+
+bool BST::isBalanced() {
+	bool balanced = true;
+	if (root == NULL) {
+		return balanced;
+	}
+	checkBalance(root, balanced);
+
+	return balanced;
+}
+
+
+
+// Ejercicios para entrevistas
+
+
+int BST::balanceTrajectory(NodeT* r, bool& itsBalanced) {
+	if (r == NULL) {
+		return 0;
+	}
+
+	int left = balanceTrajectory(r->getLeft(), itsBalanced);
+	int right = balanceTrajectory(r->getRight(), itsBalanced);
+
+	if (abs(right - left) > 1) {
+		itsBalanced = false;
+	}
+
+	return 1 + max(left, right);
+}
+
+
+bool BST::balancedTree() {
+	bool itsBalanced = true;
+	if (root == NULL) {
+		return itsBalanced;
+	}
+	balanceTrajectory(root, itsBalanced);
+	return itsBalanced;
+}
+
+int BST::thisIsDiameter(NodeT* r, int& diameterS) {
+	if (r == NULL) {
+		return 0;
+	}
+	
+	int left = thisIsDiameter(r->getLeft(), diameterS);
+	int right = thisIsDiameter(r->getRight(), diameterS);
+
+	if (1 + left + right > diameterS) {
+		diameterS = 1 + left + right;
+	}
+
+	return 1 + max(left,right);
+}
+
+int BST::whatIsDiameter() {
+	int diameterS = 0;
+	if (root == NULL) {
+		return diameterS;
+	}
+	thisIsDiameter(root, diameterS);
+
+	return diameterS;
+}
+
+// Assume that starting and ending node count as part of the distance , else rest - 2 before returning
+int BST::shortestDistance(int data1, int data2) {
+	if (root == NULL) {
+		return -1;
+	}
+
+	int* lowestData = (data1 > data2 ? &data2 : &data1);
+	int* greatestData = (data1 > data2 ? &data1 : &data2);
+	
+	NodeT* currLowest = root;
+	NodeT* currGreatest = root;
+
+	vector<int> ancestorsLowest;
+	vector<int> ancestorsGreatest;
+	
+	// Search and store ancestors from root to nodes
+	bool found = false;
+	while (currLowest != NULL && !found) {
+		if (currLowest->getData() == *lowestData) {
+			found = true;
+		}
+		ancestorsLowest.push_back(currLowest->getData());
+		currLowest = (currLowest->getData() > *lowestData ? currLowest->getLeft() : currLowest->getRight());
+	}
+	
+	if (!found) {
+		return -1;
+	}
+	else {
+		found = false;
+	}
+
+	while (currGreatest != NULL && !found) {
+		if (currGreatest->getData() == *greatestData) {
+			found = true;
+		}
+		ancestorsGreatest.push_back(currGreatest->getData());
+		currGreatest = (currGreatest->getData() > *greatestData ? currGreatest->getLeft() : currGreatest->getRight());
+	}
+
+	if (!found) {
+		return -1;
+	}else {
+
+		// Both nodes were found so now we have to do the pathfinding bit	
+		int smallestIndex = ancestorsLowest.size() - 1;
+		int greatestIndex = 0;
+		found = false;
+		while (!found) {
+			for (int i = ancestorsGreatest.size() - 1; i >= 0; --i) {
+				if (ancestorsLowest[smallestIndex] == ancestorsGreatest[i]) {
+					found = true;
+					greatestIndex = i;
+					break;
+				}
+			}
+			if (!found) {
+				smallestIndex--;
+			}
+		}
+	
+		int size = 0;
+		for (int i = ancestorsLowest.size() - 1; i >= smallestIndex; --i) {
+			cout << ancestorsLowest[i] << " ";
+			size++;
+		}
+		for (int i = greatestIndex + 1; i < ancestorsGreatest.size(); ++i) {
+			cout << ancestorsGreatest[i] << " ";
+			size++;
+		}
+		return size;
+	}
+		
+}
+
+
+// Consider NULL, root with only left child, and root with right child
+int BST::secondLargest() {
+	if (root == NULL) {
+		return -1;
+	}
+	NodeT* father = root;
+	NodeT* curr = root;
+
+	if (curr->getRight() == NULL) {
+		return curr->getLeft()->getData();
+	}
+	while (curr->getRight() != NULL) {
+		father = curr;
+		curr = curr->getRight();
+	}
+
+	return father->getData();
+}
